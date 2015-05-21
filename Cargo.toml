@@ -1,0 +1,16 @@
+[package]
+name = "json2es"
+version = "0.1.0"
+authors = ["Pierre Baillet <pierre@baillet.name>"]
+
+description = "Reads json in stdin, sends everything to ES, validate slightly in the middle"
+readme = "README"
+license= "MIT"
+
+[dependencies]
+
+# serde_macros = "*"
+serde = "*"
+time = "*"
+hyper = "*"
+url = "*"
