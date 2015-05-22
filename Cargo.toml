@@ -1,5 +1,5 @@
 [package]
-name = "json2es"
+name = "catapult"
 version = "0.1.0"
 authors = ["Pierre Baillet <pierre@baillet.name>"]
 

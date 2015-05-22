@@ -1,5 +1,5 @@
 [root]
-name = "json2es"
+name = "catapult"
 version = "0.1.0"
 dependencies = [
  "chrono 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",

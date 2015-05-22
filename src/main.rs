@@ -1,5 +1,3 @@
-#![feature(scoped)]
-
 extern crate serde;
 extern crate chrono;
 extern crate hyper;
@@ -19,7 +17,6 @@ use hyper::{ Client, Url};
 use hyper::client::Body;
 
 use chrono::offset::utc::UTC;
-use chrono::offset::TimeZone;
 
 // tx is is the sending half (tx for transmission), and rx is the receiving
 // half (rx for receiving).
@@ -61,7 +58,7 @@ fn main() {
 
                             let index_name = match transformed.find("@timestamp") {
                                 Some(time) => match time.as_string() {
-                                    Some(t) => time_to_index_name(t, None),
+                                    Some(t) => time_to_index_name(t),
                                     None => {
                                         println!("Unable to stringify {:?}", time);
                                         assert!(false);
@@ -83,7 +80,7 @@ fn main() {
 
                             let uri = Url::parse(&url).ok().expect("malformed url");
                             let body = output.into_bytes();
-                            let res = client.post(uri)
+                            let _ = client.post(uri)
                                 .body(Body::BufBody(&*body, body.len()))
                                 .send()
                                 .unwrap();
@@ -116,7 +113,7 @@ fn int_to_level(level: u64) -> String {
     }
 }
 
-fn transform(inputValue: &mut Value) -> Value {
+fn transform(input_value: &mut Value) -> Value {
     // {"name":"stakhanov","hostname":"Quark.local","pid":65470,"level":30
     // "msg":"pushing http://fr.wikipedia.org/wiki/Giant_Sand",
     // "time":"2015-05-21T10:11:02.132Z","v":0}
@@ -126,7 +123,7 @@ fn transform(inputValue: &mut Value) -> Value {
     // entry.message = entry.msg;
     // delete entry.time;
     // delete entry.msg;
-    let mut input = inputValue.as_object_mut().unwrap();
+    let mut input = input_value.as_object_mut().unwrap();
 
     if input.contains_key("time") {
         let time = input.get("time").unwrap().clone();
@@ -162,39 +159,21 @@ fn transform(inputValue: &mut Value) -> Value {
     return value::to_value(input);
 }
 
-fn time_to_index_name(full_timestamp: &str, option_output_format: Option<String>) -> String {
+fn time_to_index_name(full_timestamp: &str) -> String {
     // compatible with "2015-05-21T10:11:02.132Z"
-    let format = "%Y-%m-%d";
     let mut input = full_timestamp.to_string();
     input.truncate(10);
-    input.replace("-", ".");
-
+    input = input.replace("-", ".");
     format!("logstash-{}", input)
-}
-
-fn read_and_transform(input: String) -> Option<Value> {
-    let decode = json::from_str::<Value>(input.as_ref());
-
-    match decode {
-        Ok(val) => {
-            let mut mutable_value = val;
-            let ret = transform(&mut mutable_value);
-            Some(ret)
-        },
-        Err(e) => {
-            println!("Invalid json {:?}: {}", e, input);
-            None
-        }
-    }
 }
 
 #[test]
 fn it_transform_ok() {
     // let src = r#"{"name":"stakhanov","hostname":"Quark.local","pid":65470,"level":30,"msg":"pushing http://fr.wikipedia.org/wiki/Giant_Sand","time":"2015-05-21T10:11:02.132Z","v":0}"#;
     let src = r#"{"level":30, "msg":"this is a test.", "time": "12"}"#;
-    let transformed = read_and_transform(src.to_string());
+    let mut decode = json::from_str::<Value>(src).unwrap();
+    let transformed = transform(&mut decode);
     let out = json::to_string(&transformed).unwrap();
-    assert!(transformed.is_some());
     assert_eq!(out, r#"{"@timestamp":"12","level":"info","message":"this is a test."}"#);
 }
 
@@ -204,17 +183,7 @@ fn it_prepares_index_name() {
     let src = r#"{"time": "2015-05-21T10:11:02.132Z"}"#;
     let decode = json::from_str::<Value>(src).unwrap();
     match decode.find("time") {
-        Some(time) => assert_eq!("logstash-2015.05.21", time_to_index_name(time.as_string().unwrap(), None)),
+        Some(time) => assert_eq!("logstash-2015.05.21", time_to_index_name(time.as_string().unwrap())),
         None => assert!(false)
     }
-}
-
-#[test]
-fn it_builds_an_es_update() {
-    let src = r#"{"name":"stakhanov","hostname":"Quark.local","pid":65470,"level":30,"msg":"pushing http://fr.wikipedia.org/wiki/Giant_Sand","time":"2015-05-21T10:11:02.132Z","v":0}"#;
-
-
-    let path = format!("/{}/{}", index_name, typ);
-    println!("{}", path);
-
 }
