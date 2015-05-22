@@ -11,6 +11,6 @@ license= "MIT"
 
 # serde_macros = "*"
 serde = "*"
-time = "*"
+chrono = "*"
 hyper = "*"
 url = "*"

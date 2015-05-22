@@ -1,10 +1,14 @@
+#![feature(scoped)]
+
 extern crate serde;
-extern crate time;
+extern crate chrono;
 extern crate hyper;
 extern crate url;
 
 use std::io;
 use std::io::prelude::*;
+use std::thread;
+use std::sync::mpsc::sync_channel;
 
 use serde::json;
 use serde::json::value;
@@ -13,46 +17,91 @@ use serde::json::ser;
 
 use hyper::{ Client, Url};
 use hyper::client::Body;
-use url::form_urlencoded;
 
+use chrono::offset::utc::UTC;
+use chrono::offset::TimeZone;
 
-
-
+// tx is is the sending half (tx for transmission), and rx is the receiving
+// half (rx for receiving).
 
 fn main() {
-    let stdin = io::stdin();
+
+    // 10k lines of log should be enough
+    let (tx, rx) = sync_channel(10000);
     let es = "ra.ovh";
 
-    for line in stdin.lock().lines() {
-        let l = line.unwrap();
+    let _reader = thread::Builder::new().name("reader".to_string()).spawn(move || {
+        let stdin = io::stdin();
 
-        let mut decode = json::from_str::<Value>(l.as_ref()).unwrap();
-        transform(&mut decode);
-
-
-        let index_name = match decode.find("@timestamp") {
-            Some(time) => time_to_index_name(time.as_string().unwrap(), None),
-            None => {
-                assert!(false);
-                "".to_string()
+        for line in stdin.lock().lines() {
+            let l = line.unwrap();
+            let ll = l.clone();
+            println!("Sending {}", l);
+            match tx.try_send(l) {
+                Ok(()) => {},
+                Err(e) => {
+                    println!("Unable to send line to processor: {}", e);
+                    println!("{}", ll)
+                }
             }
-        };
+        }
+    }).ok().expect("Unable to unwrap thread for reader.");
 
-        let typ = "logs";
+    let processor = thread::Builder::new().name("processor".to_string()).spawn(move ||{
+        loop {
+            match rx.recv() {
+                Ok(l) => {
+                    println!("read: {}", l);
+                    match json::from_str::<Value>(l.as_ref()) {
+                        Ok(decoded) => {
+                            let mut mutable_decoded = decoded;
+                            let transformed = transform(&mut mutable_decoded);
 
-        let output = ser::to_string(&decode).ok().unwrap();
-        let mut client = Client::new();
-        // // /logstash-2015.05.21/logs?op_type=create
-        let url = format!("http://{}:{}/{}/{}?op_type=create", es, 9200, index_name, typ );
+                            println!("{:?}", transformed);
 
-        let uri = Url::parse(&url).ok().expect("malformed url");
-        let body = output.into_bytes();
-        let res = client.post(uri)
-            .body(Body::BufBody(&*body, body.len()))
-            .send()
-            .unwrap();
+                            let index_name = match transformed.find("@timestamp") {
+                                Some(time) => match time.as_string() {
+                                    Some(t) => time_to_index_name(t, None),
+                                    None => {
+                                        println!("Unable to stringify {:?}", time);
+                                        assert!(false);
+                                        "".to_string()
+                                    }
+                                },
+                                None => {
+                                    assert!(false);
+                                    "".to_string()
+                                }
+                            };
 
-    }
+                            let typ = "logs";
+
+                            let output = ser::to_string(&transformed).ok().unwrap();
+                            let mut client = Client::new();
+                            // // /logstash-2015.05.21/logs?op_type=create
+                            let url = format!("http://{}:{}/{}/{}?op_type=create", es, 9200, index_name, typ );
+
+                            let uri = Url::parse(&url).ok().expect("malformed url");
+                            let body = output.into_bytes();
+                            let res = client.post(uri)
+                                .body(Body::BufBody(&*body, body.len()))
+                                .send()
+                                .unwrap();
+                        },
+                        Err(s) => println!("Unable to parse line: {}\nfor {}",s,l)
+                    }
+                },
+                Err(std::sync::mpsc::RecvError) => break
+            }
+
+        }
+    }).ok().expect("Unable to unwrap thread for processor");
+
+
+    let _p = processor.join();
+
+
+
 }
 
 fn int_to_level(level: u64) -> String {
@@ -67,7 +116,7 @@ fn int_to_level(level: u64) -> String {
     }
 }
 
-fn transform(input: &mut Value) {
+fn transform(inputValue: &mut Value) -> Value {
     // {"name":"stakhanov","hostname":"Quark.local","pid":65470,"level":30
     // "msg":"pushing http://fr.wikipedia.org/wiki/Giant_Sand",
     // "time":"2015-05-21T10:11:02.132Z","v":0}
@@ -77,27 +126,26 @@ fn transform(input: &mut Value) {
     // entry.message = entry.msg;
     // delete entry.time;
     // delete entry.msg;
-    let input = input.as_object_mut().unwrap();
+    let mut input = inputValue.as_object_mut().unwrap();
 
     if input.contains_key("time") {
         let time = input.get("time").unwrap().clone();
-
         input.insert("@timestamp".to_string(), time);
         input.remove("time");
     } else {
         // Inject now timestamp.
-        let tm = time::now_utc();
+        let tm = UTC::now();
 
         let format_prefix = "%Y-%m-%dT%H:%M:%S.%f";
         let format_suffix = "%Z";
         // truncate up to the third digit
         // 2015-05-21T15:27:20.994
         // 01234567890123456789012
-        let mut timestamp_prefix = time::strftime(format_prefix.as_ref(), &tm).ok().unwrap();
-        timestamp_prefix.truncate(23);
-        let timestamp_suffix =  time::strftime(format_suffix.as_ref(), &tm).ok().unwrap();
-        let timestamp = timestamp_prefix.push_str(&timestamp_suffix);
-        
+        let mut timestamp = tm.format(format_prefix.as_ref()).to_string();
+        timestamp.truncate(23);
+        let timestamp_suffix =  tm.format(format_suffix.as_ref()).to_string();
+        timestamp.push_str(&timestamp_suffix);
+
         input.insert("@timestamp".to_string(), value::to_value(&timestamp));
     }
 
@@ -111,25 +159,17 @@ fn transform(input: &mut Value) {
         input.insert("message".to_string(), message);
         input.remove("msg");
     }
+    return value::to_value(input);
 }
 
-fn time_to_index_name(input: &str, option_output_format: Option<String>) -> String {
+fn time_to_index_name(full_timestamp: &str, option_output_format: Option<String>) -> String {
     // compatible with "2015-05-21T10:11:02.132Z"
-    let format = "%Y-%m-%dT%H:%M:%S.%f%Z";
+    let format = "%Y-%m-%d";
+    let mut input = full_timestamp.to_string();
+    input.truncate(10);
+    input.replace("-", ".");
 
-    let output_format = match option_output_format {
-        Some(f) => f,
-        None => "logstash-%Y.%m.%d".to_string()
-    };
-
-    match time::strptime(input, format) {
-        Ok(tm) => time::strftime(output_format.as_ref(), &tm).ok().unwrap(),
-        Err(e) => {
-            println!("Unable to parse date:{:?}, {}.", e, input);
-            let tm = time::now_utc();
-            time::strftime(output_format.as_ref(), &tm).ok().unwrap()
-        }
-    }
+    format!("logstash-{}", input)
 }
 
 fn read_and_transform(input: String) -> Option<Value> {
@@ -137,8 +177,8 @@ fn read_and_transform(input: String) -> Option<Value> {
 
     match decode {
         Ok(val) => {
-            let mut ret = val;
-            transform(&mut ret);
+            let mut mutable_value = val;
+            let ret = transform(&mut mutable_value);
             Some(ret)
         },
         Err(e) => {
