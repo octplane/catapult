@@ -17,6 +17,8 @@ use url::form_urlencoded;
 
 
 
+
+
 fn main() {
     let stdin = io::stdin();
     let es = "ra.ovh";
@@ -25,8 +27,10 @@ fn main() {
         let l = line.unwrap();
 
         let mut decode = json::from_str::<Value>(l.as_ref()).unwrap();
+        transform(&mut decode);
 
-        let index_name = match decode.find("time") {
+
+        let index_name = match decode.find("@timestamp") {
             Some(time) => time_to_index_name(time.as_string().unwrap(), None),
             None => {
                 assert!(false);
@@ -35,10 +39,8 @@ fn main() {
         };
 
         let typ = "logs";
-        transform(&mut decode);
-        let output = ser::to_string_pretty(&decode).ok().unwrap();
-        println!("{}", output);
 
+        let output = ser::to_string(&decode).ok().unwrap();
         let mut client = Client::new();
         // // /logstash-2015.05.21/logs?op_type=create
         let url = format!("http://{}:{}/{}/{}?op_type=create", es, 9200, index_name, typ );
@@ -49,10 +51,6 @@ fn main() {
             .body(Body::BufBody(&*body, body.len()))
             .send()
             .unwrap();
-        // assert_eq!(res.status, hyper::Ok);
-        // let mut builder = client.post(uri);
-        // builder.body(*output)
-        //
 
     }
 }
@@ -83,8 +81,24 @@ fn transform(input: &mut Value) {
 
     if input.contains_key("time") {
         let time = input.get("time").unwrap().clone();
+
         input.insert("@timestamp".to_string(), time);
         input.remove("time");
+    } else {
+        // Inject now timestamp.
+        let tm = time::now_utc();
+
+        let format_prefix = "%Y-%m-%dT%H:%M:%S.%f";
+        let format_suffix = "%Z";
+        // truncate up to the third digit
+        // 2015-05-21T15:27:20.994
+        // 01234567890123456789012
+        let mut timestamp_prefix = time::strftime(format_prefix.as_ref(), &tm).ok().unwrap();
+        timestamp_prefix.truncate(23);
+        let timestamp_suffix =  time::strftime(format_suffix.as_ref(), &tm).ok().unwrap();
+        let timestamp = timestamp_prefix.push_str(&timestamp_suffix);
+        
+        input.insert("@timestamp".to_string(), value::to_value(&timestamp));
     }
 
     if input.contains_key("level") {
