@@ -9,8 +9,8 @@ license= "MIT"
 
 [dependencies]
 
-# serde_macros = "*"
 serde = "*"
 chrono = "*"
 hyper = "*"
 url = "*"
+nom = "*"

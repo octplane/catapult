@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate nom;
+
 extern crate serde;
 extern crate chrono;
 extern crate hyper;
@@ -18,10 +21,14 @@ use hyper::client::Body;
 
 use chrono::offset::utc::UTC;
 
-// tx is is the sending half (tx for transmission), and rx is the receiving
-// half (rx for receiving).
+pub mod config;
 
 fn main() {
+
+    config::load_config();
+    config::read_mem();
+    config::read_config_file("catapult.conf");
+    assert!(false);
 
     // 10k lines of log should be enough
     let (tx, rx) = sync_channel(10000);
