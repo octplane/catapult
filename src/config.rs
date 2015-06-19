@@ -12,7 +12,7 @@ named!(quoted_string <&str>,
     tag!("\"")              ~
     qs: map_res!(
       take_until!("\""),
-      str::from_utf8)     ~
+      str::from_utf8)       ~
     tag!("\"")              ,
   || { qs }
   )
@@ -27,9 +27,9 @@ named!(blanks,
 
 named!(comment,
     chain!(
-        tag!("#") ~
-        not_line_ending? ~
-        alt!(eol | eof),
+        tag!("#")           ~
+        not_line_ending?    ~
+        alt!(eol | eof)     ,
         || { &b""[..] }));
 
 named!(eol,
@@ -57,11 +57,11 @@ named!(key_value    <&[u8],(&str,&str)>,
 
 named!(keys_and_values_aggregator<&[u8], Vec<(&str,&str)> >,
  chain!(
-     tag!("{")      ~
-     blanks     ~
-     kva: many0!(key_value) ~
-     blanks    ~
-     tag!("}"),
+     tag!("{")                ~
+     blanks                   ~
+     kva: many0!(key_value)   ~
+     blanks                   ~
+     tag!("}")                ,
  || {kva} )
 );
 
@@ -83,25 +83,25 @@ fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<String, String> > {
 
 named!(input_and_params <&[u8], (String, Option<HashMap<String,String>>)>,
   chain!(
-    blanks                     ~
+    blanks                          ~
     ik: input_kind                  ~
-    blanks                     ~
+    blanks                          ~
     kv: keys_and_values?            ~
-    blanks                     ,
-    || { (ik.to_owned(), kv) }
+    blanks                          ,
+    || { (ik.to_lowercase(), kv) }
   )
 );
 
 named!(inputs <&[u8], Vec<(String, Option<HashMap<String,String>>)> >,
   chain!(
-    tag!("input")                    ~
-    blanks                      ~
-    tag!("{")                        ~
-    blanks                      ~
-    ins: many0!(input_and_params) ~
-    blanks                      ~
-    tag!("}")                        ~
-    blanks                      ,
+    tag!("input")                     ~
+    blanks                            ~
+    tag!("{")                         ~
+    blanks                            ~
+    ins: many0!(input_and_params)     ~
+    blanks                            ~
+    tag!("}")                         ~
+    blanks                            ,
     || { (ins) }
   )
 );
