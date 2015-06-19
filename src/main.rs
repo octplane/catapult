@@ -25,8 +25,6 @@ pub mod config;
 
 fn main() {
 
-    config::load_config();
-    config::read_mem();
     config::read_config_file("catapult.conf");
     assert!(false);
 

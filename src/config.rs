@@ -1,11 +1,13 @@
 use std::str;
 
-use nom::{Consumer,ConsumerState, MemProducer, FileProducer, multispace};
+use nom::{IResult, multispace, alphanumeric, space, not_line_ending};
 use nom::IResult::*;
 
-
-use nom::ConsumerState::{ConsumerError, Await, Seek};
-use std::io::SeekFrom;
+use std::io::prelude::*;
+use std::fs::File;
+use std::collections::HashMap;
+ 
+use nom::GetInput;
 
 named!(quoted_string <&str>,
   chain!(
@@ -21,195 +23,129 @@ named!(quoted_string <&str>,
 #[derive(Debug)]
 enum InputKind {
   Stdin,
-  File{fname: String},
+  File,
   None,
 }
 
-named!(file_and_name <InputKind>,
+named!( file <InputKind>, chain!( tag!("file"), || { InputKind::File } ) );
+named!( stdin <InputKind>, chain!( tag!("stdin"), || { InputKind::Stdin } ) );
+named!( none <InputKind>, chain!( tag!("none"), || { InputKind::None } ) );
+
+named!(input_kind <InputKind>, alt!(stdin | file | none));
+
+named!(key_value    <&[u8],(&str,&str)>,
   chain!(
-    tag!("file")             ~
-    multispace              ~
-    fname: quoted_string    ,
-    || { InputKind::File{fname:fname.to_string()} }
+    key: map_res!(alphanumeric, str::from_utf8) ~
+         space?                            ~
+         tag!("=")                         ~
+         space?                            ~
+    val: map_res!(
+           take_until_either!("\n;#"),
+           str::from_utf8
+         )                                 ~
+         space?                            ~
+         chain!(
+           tag!("# ")        ~
+           not_line_ending  ,
+           ||{}
+         ) ?                               ~
+         multispace?                       ,
+    ||{(key, val)}
   )
 );
 
-named!(stdin <InputKind>,
-  chain!(
-    tag!("stdin"),
-    || { println!("stdin!");
-      InputKind::Stdin}
-  )
+
+named!(keys_and_values_aggregator<&[u8], Vec<(&str,&str)> >,
+ chain!(
+     tag!("{")      ~
+     multispace?     ~
+     kva: many0!(key_value) ~
+     multispace?    ~
+     tag!("}"),
+ || {kva} )
 );
 
-named!(input_configurer <InputKind>, alt!(stdin | file_and_name));
+fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<&str, &str> > {
+  let mut h: HashMap<&str, &str> = HashMap::new();
+  let kva = keys_and_values_aggregator(input);
 
-#[allow(dead_code)]
-pub struct ConfigFileConsumer {
-  input: InputKind
-}
-
-impl Consumer for ConfigFileConsumer {
-  fn consume(&mut self, input: &[u8]) -> ConsumerState {
-    println!("consuming input: {:?}", input);
-    match input_configurer(input) {
-      Done(_, _) => return ConsumerState::ConsumerDone,
-      Error(a) => {
-        println!("parse error: {:?}", a);
-        assert!(false);
-        return ConsumerState::ConsumerError(0);
-      },
-      Incomplete(_) => {
-        println!("Incomplete content -> await: {}", input.len());
-        return ConsumerState::Await(0, input.len());
+  println!("Remaining input: {:?}", kva.remaining_input());
+  match kva {
+    IResult::Done(i,tuple_vec) => {
+        println!("{:?}", tuple_vec);
+      for &(k,v) in tuple_vec.iter() {
+        h.insert(k, v);
       }
+      IResult::Done(i, h)
+    },
+    IResult::Incomplete(a)     => IResult::Incomplete(a),
+    IResult::Error(a)          => {
+        IResult::Error(a)
     }
   }
-  fn failed(&mut self, error_code: u32) {
-    println!("failed with error code: {}", error_code);
-   }
-
-  fn end(&mut self) {
-    println!("finished!");
-  }
-
-  //
-  // fn run(&mut self, producer: &mut Producer) {
-  //   let mut acc: Vec<u8>       = Vec::new();
-  //   let mut position           = 0;
-  //   let mut should_seek        = false;
-  //   let mut consumed:usize     = 0;
-  //   let mut needed:usize       = 0;
-  //   let mut seek_from:SeekFrom = SeekFrom::Current(0);
-  //   let mut eof = false;
-  //   let mut end = false;
-  //   let mut err: Option<u32> = None;
-  //
-  //   loop {
-  //     //self.getDataFromProducer(producer, seek_from, needed, acc);
-  //     if !should_seek && acc.len() - consumed >= needed {
-  //       //println!("buffer is large enough, skipping");
-  //       let mut tmp = Vec::new();
-  //       //println!("before:\n{}", acc.to_hex(16));
-  //       //println!("after:\n{}", (&acc[consumed..acc.len()]).to_hex(16));
-  //       tmp.extend(acc[consumed..acc.len()].iter().cloned());
-  //       acc.clear();
-  //       acc = tmp;
-  //     } else {
-  //       if should_seek {
-  //         let _ = producer.seek(seek_from);
-  //         //println!("seeking: {:?}", pos);
-  //         should_seek = false;
-  //         acc.clear();
-  //       } else {
-  //         let mut tmp = Vec::new();
-  //         tmp.extend(acc[consumed..acc.len()].iter().cloned());
-  //         acc.clear();
-  //         acc = tmp;
-  //       }
-  //
-  //       loop {
-  //         let state   = producer.produce();
-  //         match state {
-  //           Data(v) => {
-  //             //println!("got data: {} bytes", v.len());
-  //             acc.extend(v.iter().cloned());
-  //             position = position + v.len();
-  //           },
-  //           Eof(v) => {
-  //             if v.is_empty() {
-  //               //println!("eof empty");
-  //               //eof = true;
-  //               self.end();
-  //               return
-  //             } else {
-  //               //println!("eof with {} bytes", v.len());
-  //               eof = true;
-  //               acc.extend(v.iter().cloned());
-  //               position = position + v.len();
-  //               break;
-  //             }
-  //           }
-  //           ProducerError(_) => {break;}
-  //           Continue => { continue; }
-  //         }
-  //         //println!("acc size: {}", acc.len());
-  //         if acc.len() >= needed { break; }
-  //       }
-  //     }
-  //
-  //     //println!("full:\n{}", acc.to_hex(8));
-  //     //println!("truncated:\n{}", (&acc[0..needed]).to_hex(16));
-  //     match self.consume(&acc[0..needed]) {
-  //       ConsumerState::ConsumerError(e) => {
-  //         //println!("consumer error, stopping: {}", e);
-  //         err = Some(e);
-  //       },
-  //       ConsumerState::ConsumerDone => {
-  //         //println!("data, done");
-  //         end = true;
-  //       },
-  //       ConsumerState::Seek(consumed_bytes, sf, needed_bytes) => {
-  //         //println!("Seek: consumed {} bytes, got {:?} and asked {} bytes", consumed_bytes, sf, needed_bytes);
-  //         seek_from = match sf {
-  //           SeekFrom::Current(i) => SeekFrom::Current(i - (acc.len() - needed) as i64),
-  //           a => a
-  //         };
-  //         should_seek = true;
-  //         consumed = consumed_bytes;
-  //         needed   = needed_bytes;
-  //       },
-  //       ConsumerState::Await(consumed_bytes, needed_bytes) => {
-  //         //println!("consumed: {} bytes | needed: {} bytes", consumed_bytes, needed_bytes);
-  //         consumed = consumed_bytes;
-  //         needed   = needed_bytes;
-  //       },
-  //       ConsumerState::Incomplete => {
-  //         //println!("incomplete");
-  //       }
-  //     }
-  //     if let Some(e) = err {
-  //       self.failed(e);
-  //       break;
-  //     }
-  //     if eof {
-  //       self.end();
-  //       break;
-  //     }
-  //     if end {
-  //       self.end();
-  //       break;
-  //     }
-  //   }
-  // }
-  //
-
-
-}
-
-pub fn load_config() {
-  println!("## Hand made consuming");
-  let source = String::from("stdin").into_bytes();
-  let mut c = ConfigFileConsumer{input: InputKind::None};
-  println!("{:?}", c.consume(&source));
 }
 
 
-pub fn read_mem() {
-  println!("## Memory producer");
+named!(input_and_params<&[u8], (InputKind, Option<HashMap<&str,&str>>)>,
+  chain!(
+    ik: input_kind                  ~
+    multispace?                     ~
+    kv: keys_and_values? ,
+    move || { (ik, kv) }
+  )
+);
 
-  let mut p = MemProducer::new(&b"stdin"[..], 3);
-  let mut c = ConfigFileConsumer{input: InputKind::None};
-  c.run(&mut p);
-}
 
-#[allow(unused_must_use)]
+// named!(inputs_aggregator<&str, Vec<(&InputKind,(&str,HashMap<&str,&str>))>>,
+//   chain!(
+//     tag!("input")                   ~
+//     multispace                      ~
+//     tag!("{")                       ~
+//     multispace                      ~
+//     ip: many0!(input_and_params)    ~
+//     multispace                      ~
+//     tag!("}")                       ,
+//     || { ip }
+//   )
+// );
+// 
+
+// fn input_configurations(input: &[u8]) -> IResult<&InputKind, HashMap<&str, HashMap<&str, &str> > > {
+//   let mut h: HashMap<&str, HashMap<&str, &str>> = HashMap::new();
+// 
+//   match inputs_aggregator(input) {
+//     IResult::Done(i,tuple_vec) => {
+//       for &(k,ref v) in tuple_vec.iter() {
+//         h.insert(k, v.clone());
+//       }
+//       IResult::Done(i, h)
+//     },
+//     IResult::Incomplete(a)     => IResult::Incomplete(a),
+//     IResult::Error(a)          => IResult::Error(a)
+//   }
+// }
+// 
+
 pub fn read_config_file(filename: &str) {
-  println!("## Reading config file");
-  FileProducer::new(filename, 400).map(|producer: FileProducer| {
-    println!("Reading configuration file in {}", filename);
-    let mut p = producer;
-    let mut c = ConfigFileConsumer{input: InputKind::None};
-    c.run(&mut p);
-  });
+  println!("Reading config file.");
+  let mut f = File::open(filename).unwrap();
+  let mut s = String::new();
+
+  match f.read_to_string(&mut s) {
+    Ok(_) => {
+      let source = s.into_bytes();
+      match input_and_params(&source) {
+        Done(_, configuration) => println!("yes: {:?}", configuration),
+        Error(e) => {
+          println!("parse error: {:?}", e);
+          assert!(false);
+        },
+        Incomplete(e) => {
+          println!("Incomplete content -> await: {:?}", e);
+          assert!(false);
+        }
+      }
+    },
+    Err(e) => panic!("{:?}", e)
+  };
 }
