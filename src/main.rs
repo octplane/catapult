@@ -25,8 +25,12 @@ pub mod config;
 
 fn main() {
 
-    config::read_config_file("catapult.conf");
-    assert!(false);
+    match config::read_config_file("catapult.conf")  {
+      Ok(conf) => println!("{:?}", conf),
+      Err(e) => panic!("{:?}", e)
+    }
+
+    panic!("hop");
 
     // 10k lines of log should be enough
     let (tx, rx) = sync_channel(10000);

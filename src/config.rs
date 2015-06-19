@@ -19,7 +19,8 @@ named!(quoted_string <&str>,
 );
 
 #[derive(Debug)]
-enum InputKind {
+#[derive(PartialEq)]
+pub enum InputKind {
   Stdin,
   File,
   None,
@@ -75,13 +76,13 @@ named!(keys_and_values_aggregator<&[u8], Vec<(&str,&str)> >,
  || {kva} )
 );
 
-fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<&str, &str> > {
-  let mut h: HashMap<&str, &str> = HashMap::new();
+fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<String, String> > {
+  let mut h: HashMap<String, String> = HashMap::new();
 
   match keys_and_values_aggregator(input) {
     IResult::Done(i,tuple_vec) => {
       for &(k,v) in tuple_vec.iter() {
-        h.insert(k, v);
+        h.insert(k.to_owned(), v.to_owned());
       }
       IResult::Done(i, h)
     },
@@ -91,7 +92,7 @@ fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<&str, &str> > {
 }
 
 
-named!(input_and_params <&[u8], (InputKind, Option<HashMap<&str,&str>>)>,
+named!(input_and_params <&[u8], (InputKind, Option<HashMap<String,String>>)>,
   chain!(
     blanks                     ~
     ik: input_kind                  ~
@@ -102,7 +103,7 @@ named!(input_and_params <&[u8], (InputKind, Option<HashMap<&str,&str>>)>,
   )
 );
 
-named!(inputs <&[u8], Vec<(InputKind, Option<HashMap<&str,&str>>)> >,
+named!(inputs <&[u8], Vec<(InputKind, Option<HashMap<String,String>>)> >,
   chain!(
     tag!("input")                    ~
     blanks                      ~
@@ -116,7 +117,7 @@ named!(inputs <&[u8], Vec<(InputKind, Option<HashMap<&str,&str>>)> >,
   )
 );
 
-pub fn read_config_file(filename: &str) {
+pub fn read_config_file(filename: &str) -> Result<Vec<(InputKind,  Option<HashMap<String,String>>)>, String> {
   println!("Reading config file.");
   let mut f = File::open(filename).unwrap();
   let mut s = String::new();
@@ -125,17 +126,38 @@ pub fn read_config_file(filename: &str) {
     Ok(_) => {
       let source = s.into_bytes();
       match inputs(&source) {
-        Done(_, configuration) => println!("yes: {:?}", configuration),
+        Done(_, configuration) => Ok(configuration),
         Error(e) => {
-          println!("Parse error: {:?}", e);
-          assert!(false);
+          Err(format!("Parse error: {:?}", e))
         },
         Incomplete(e) => {
-          println!("Incomplete content -> await: {:?}", e);
-          assert!(false);
+          Err(format!("Incomplete content -> await: {:?}", e))
         }
       }
     },
-    Err(e) => panic!("{:?}", e)
-  };
+    Err(e) => Err(format!("Read error: {:?}", e))
+  }
+}
+
+#[test]
+fn test_config_parser() {
+  match read_config_file("files/test_config.conf") {
+    Ok(conf) => {
+      // Some({"path": "some literal string", "pipo": "12"})), (Stdin, Some({"tag": "stdin"}))]
+      assert_eq!(conf.len(), 2);
+      assert_eq!(conf[0].0, InputKind::File);
+      let mut file_conf = HashMap::new();
+      file_conf.insert("path".to_owned(), "some literal string".to_owned());
+      file_conf.insert("pipo".to_owned(), "12".to_owned());
+      assert_eq!(conf[0].1, Some(file_conf) );
+
+      assert_eq!(conf[1].0, InputKind::Stdin);
+      let mut stdin_conf = HashMap::new();
+      stdin_conf.insert("tag".to_owned(), "stdin".to_owned());
+      assert_eq!(conf[1].1, Some(stdin_conf) );
+
+
+    },
+    Err(e) => assert!(false, format!("Unable to parse configuration file: {}", e))
+  }
 }
