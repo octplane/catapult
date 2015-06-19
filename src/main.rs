@@ -22,14 +22,24 @@ use hyper::client::Body;
 use chrono::offset::utc::UTC;
 
 pub mod config;
+pub mod inputs;
+
+use config::InputKind;
+
 
 fn main() {
-  match config::read_config_file("catapult.conf")  {
-    Ok(conf) => println!("{:?}", conf),
+  let data_source = match config::read_config_file("catapult.conf")  {
+    Ok(conf) => match conf[0].0 {
+      InputKind::Stdin => {
+        match inputs::stdin_reader(conf[0].1.clone()) {
+          Ok(data_source) => { println!("Started thread for {:?}", conf[0].0); data_source},
+          Err(e) => panic!("Unable to instanciate input stream for {:?}: {}", conf[0].0, e)
+        }
+      }
+      _ => { panic!("Input {} not implemented")}
+    },
     Err(e) => panic!("{:?}", e)
-  }
-
-  panic!("hop");
+  };
 
   // 10k lines of log should be enough
   let (tx, rx) = sync_channel(10000);
