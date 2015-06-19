@@ -18,7 +18,7 @@ named!(quoted_string <&str>,
   )
 );
 
-named!(input_kind, map_res!(alphanumeric, str::from_utf8));
+named!(input_kind <&[u8], &str>, map_res!(alphanumeric, str::from_utf8));
 
 named!(blanks,
     chain!(
@@ -69,7 +69,7 @@ fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<String, String> > {
   let mut h: HashMap<String, String> = HashMap::new();
 
   match keys_and_values_aggregator(input) {
-    IResult::Done(i,tuple_vec) => {
+    IResult::Done(i, tuple_vec) => {
       for &(k,v) in tuple_vec.iter() {
         h.insert(k.to_owned(), v.to_owned());
       }
@@ -81,14 +81,14 @@ fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<String, String> > {
 }
 
 
-named!(input_and_params <&[u8], (&str, Option<HashMap<String,String>>)>,
+named!(input_and_params <&[u8], (String, Option<HashMap<String,String>>)>,
   chain!(
     blanks                     ~
     ik: input_kind                  ~
     blanks                     ~
     kv: keys_and_values?            ~
     blanks                     ,
-    || { (ik, kv) }
+    || { (ik.to_owned(), kv) }
   )
 );
 
@@ -136,13 +136,13 @@ fn test_config_parser() {
     Ok(conf) => {
       // Some({"path": "some literal string", "pipo": "12"})), (Stdin, Some({"tag": "stdin"}))]
       assert_eq!(conf.len(), 2);
-      assert_eq!(conf[0].0, InputKind::File);
+      assert_eq!(conf[0].0, "file");
       let mut file_conf = HashMap::new();
       file_conf.insert("path".to_owned(), "some literal string".to_owned());
       file_conf.insert("pipo".to_owned(), "12".to_owned());
       assert_eq!(conf[0].1, Some(file_conf) );
 
-      assert_eq!(conf[1].0, InputKind::Stdin);
+      assert_eq!(conf[1].0, "stdin");
       let mut stdin_conf = HashMap::new();
       stdin_conf.insert("tag".to_owned(), "stdin".to_owned());
       assert_eq!(conf[1].1, Some(stdin_conf) );
