@@ -24,13 +24,10 @@ use chrono::offset::utc::UTC;
 pub mod config;
 pub mod inputs;
 
-use config::InputKind;
-
-
 fn main() {
   let data_source = match config::read_config_file("catapult.conf")  {
-    Ok(conf) => match conf[0].0 {
-      InputKind::Stdin => {
+    Ok(conf) => match conf[0].0.as_ref() {
+      "stdin" => {
         match inputs::stdin_reader(conf[0].1.clone()) {
           Ok(data_source) => { println!("Started thread for {:?}", conf[0].0); data_source},
           Err(e) => panic!("Unable to instanciate input stream for {:?}: {}", conf[0].0, e)

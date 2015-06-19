@@ -18,18 +18,7 @@ named!(quoted_string <&str>,
   )
 );
 
-#[derive(Debug)]
-#[derive(PartialEq)]
-pub enum InputKind {
-  Stdin,
-  File,
-  None,
-}
-
-named!( file <InputKind>, chain!( tag!("file"), || { InputKind::File } ) );
-named!( stdin <InputKind>, chain!( tag!("stdin"), || { InputKind::Stdin } ) );
-named!( none <InputKind>, chain!( tag!("none"), || { InputKind::None } ) );
-named!(input_kind <InputKind>, alt!(stdin | file | none));
+named!(input_kind, map_res!(alphanumeric, str::from_utf8));
 
 named!(blanks,
     chain!(
@@ -92,7 +81,7 @@ fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<String, String> > {
 }
 
 
-named!(input_and_params <&[u8], (InputKind, Option<HashMap<String,String>>)>,
+named!(input_and_params <&[u8], (&str, Option<HashMap<String,String>>)>,
   chain!(
     blanks                     ~
     ik: input_kind                  ~
@@ -103,7 +92,7 @@ named!(input_and_params <&[u8], (InputKind, Option<HashMap<String,String>>)>,
   )
 );
 
-named!(inputs <&[u8], Vec<(InputKind, Option<HashMap<String,String>>)> >,
+named!(inputs <&[u8], Vec<(String, Option<HashMap<String,String>>)> >,
   chain!(
     tag!("input")                    ~
     blanks                      ~
@@ -117,7 +106,9 @@ named!(inputs <&[u8], Vec<(InputKind, Option<HashMap<String,String>>)> >,
   )
 );
 
-pub fn read_config_file(filename: &str) -> Result<Vec<(InputKind,  Option<HashMap<String,String>>)>, String> {
+
+
+pub fn read_config_file(filename: &str) -> Result<Vec<(String,  Option<HashMap<String,String>>)>, String> {
   println!("Reading config file.");
   let mut f = File::open(filename).unwrap();
   let mut s = String::new();
