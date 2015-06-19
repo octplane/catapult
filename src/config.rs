@@ -6,7 +6,7 @@ use nom::IResult::*;
 use std::io::prelude::*;
 use std::fs::File;
 use std::collections::HashMap;
- 
+
 use nom::GetInput;
 
 named!(quoted_string <&str>,
@@ -86,45 +86,30 @@ fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<&str, &str> > {
 }
 
 
-named!(input_and_params<&[u8], (InputKind, Option<HashMap<&str,&str>>)>,
+named!(input_and_params <&[u8], (InputKind, Option<HashMap<&str,&str>>)>,
   chain!(
+    multispace?                     ~
     ik: input_kind                  ~
     multispace?                     ~
-    kv: keys_and_values? ,
-    move || { (ik, kv) }
+    kv: keys_and_values?            ~
+    multispace?                     ,
+    || { (ik, kv) }
   )
 );
 
-
-// named!(inputs_aggregator<&str, Vec<(&InputKind,(&str,HashMap<&str,&str>))>>,
-//   chain!(
-//     tag!("input")                   ~
-//     multispace                      ~
-//     tag!("{")                       ~
-//     multispace                      ~
-//     ip: many0!(input_and_params)    ~
-//     multispace                      ~
-//     tag!("}")                       ,
-//     || { ip }
-//   )
-// );
-// 
-
-// fn input_configurations(input: &[u8]) -> IResult<&InputKind, HashMap<&str, HashMap<&str, &str> > > {
-//   let mut h: HashMap<&str, HashMap<&str, &str>> = HashMap::new();
-// 
-//   match inputs_aggregator(input) {
-//     IResult::Done(i,tuple_vec) => {
-//       for &(k,ref v) in tuple_vec.iter() {
-//         h.insert(k, v.clone());
-//       }
-//       IResult::Done(i, h)
-//     },
-//     IResult::Incomplete(a)     => IResult::Incomplete(a),
-//     IResult::Error(a)          => IResult::Error(a)
-//   }
-// }
-// 
+named!(inputs <&[u8], Vec<(InputKind, Option<HashMap<&str,&str>>)> >,
+  chain!(
+    tag!("input")                    ~
+    multispace?                      ~
+    tag!("{")                        ~
+    multispace?                      ~
+    ins: many0!(input_and_params) ~
+    multispace?                      ~
+    tag!("}")                        ~
+    multispace?                      ,
+    || { (ins) }
+  )
+);
 
 pub fn read_config_file(filename: &str) {
   println!("Reading config file.");
@@ -134,7 +119,7 @@ pub fn read_config_file(filename: &str) {
   match f.read_to_string(&mut s) {
     Ok(_) => {
       let source = s.into_bytes();
-      match input_and_params(&source) {
+      match inputs(&source) {
         Done(_, configuration) => println!("yes: {:?}", configuration),
         Error(e) => {
           println!("parse error: {:?}", e);
