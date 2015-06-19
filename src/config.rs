@@ -1,13 +1,11 @@
 use std::str;
 
-use nom::{IResult, multispace, alphanumeric, space, not_line_ending};
+use nom::{IResult, multispace, eof, alphanumeric, space, not_line_ending};
 use nom::IResult::*;
 
 use std::io::prelude::*;
 use std::fs::File;
 use std::collections::HashMap;
-
-use nom::GetInput;
 
 named!(quoted_string <&str>,
   chain!(
@@ -30,26 +28,38 @@ enum InputKind {
 named!( file <InputKind>, chain!( tag!("file"), || { InputKind::File } ) );
 named!( stdin <InputKind>, chain!( tag!("stdin"), || { InputKind::Stdin } ) );
 named!( none <InputKind>, chain!( tag!("none"), || { InputKind::None } ) );
-
 named!(input_kind <InputKind>, alt!(stdin | file | none));
+
+named!(blanks,
+    chain!(
+        many0!(alt!(multispace | comment | eol | eof)),
+        || { &b""[..] }));
+
+named!(comment,
+    chain!(
+        tag!("#") ~
+        not_line_ending? ~
+        alt!(eol | eof),
+        || { &b""[..] }));
+
+named!(eol,
+    alt!(tag!("\r\n") | tag!("\n") | tag!("\u{2028}") | tag!("\u{2029}")));
+
 
 named!(key_value    <&[u8],(&str,&str)>,
   chain!(
     key: map_res!(alphanumeric, str::from_utf8) ~
-         space?                            ~
-         tag!("=")                         ~
-         space?                            ~
-    val: map_res!(
-           take_until_either!("\n;#"),
-           str::from_utf8
-         )                                 ~
-         space?                            ~
-         chain!(
-           tag!("# ")        ~
-           not_line_ending  ,
-           ||{}
-         ) ?                               ~
-         multispace?                       ,
+      space?                            ~
+      tag!("=")                         ~
+      space?                            ~
+    val: alt!(
+      quoted_string |
+      map_res!(
+        take_until_either!("\n\r#"),
+        str::from_utf8
+      )
+      )                                    ~
+      blanks                               ,
     ||{(key, val)}
   )
 );
@@ -58,41 +68,36 @@ named!(key_value    <&[u8],(&str,&str)>,
 named!(keys_and_values_aggregator<&[u8], Vec<(&str,&str)> >,
  chain!(
      tag!("{")      ~
-     multispace?     ~
+     blanks     ~
      kva: many0!(key_value) ~
-     multispace?    ~
+     blanks    ~
      tag!("}"),
  || {kva} )
 );
 
 fn keys_and_values(input:&[u8]) -> IResult<&[u8], HashMap<&str, &str> > {
   let mut h: HashMap<&str, &str> = HashMap::new();
-  let kva = keys_and_values_aggregator(input);
 
-  println!("Remaining input: {:?}", kva.remaining_input());
-  match kva {
+  match keys_and_values_aggregator(input) {
     IResult::Done(i,tuple_vec) => {
-        println!("{:?}", tuple_vec);
       for &(k,v) in tuple_vec.iter() {
         h.insert(k, v);
       }
       IResult::Done(i, h)
     },
     IResult::Incomplete(a)     => IResult::Incomplete(a),
-    IResult::Error(a)          => {
-        IResult::Error(a)
-    }
+    IResult::Error(a)          => IResult::Error(a)
   }
 }
 
 
 named!(input_and_params <&[u8], (InputKind, Option<HashMap<&str,&str>>)>,
   chain!(
-    multispace?                     ~
+    blanks                     ~
     ik: input_kind                  ~
-    multispace?                     ~
+    blanks                     ~
     kv: keys_and_values?            ~
-    multispace?                     ,
+    blanks                     ,
     || { (ik, kv) }
   )
 );
@@ -100,13 +105,13 @@ named!(input_and_params <&[u8], (InputKind, Option<HashMap<&str,&str>>)>,
 named!(inputs <&[u8], Vec<(InputKind, Option<HashMap<&str,&str>>)> >,
   chain!(
     tag!("input")                    ~
-    multispace?                      ~
+    blanks                      ~
     tag!("{")                        ~
-    multispace?                      ~
+    blanks                      ~
     ins: many0!(input_and_params) ~
-    multispace?                      ~
+    blanks                      ~
     tag!("}")                        ~
-    multispace?                      ,
+    blanks                      ,
     || { (ins) }
   )
 );
@@ -122,7 +127,7 @@ pub fn read_config_file(filename: &str) {
       match inputs(&source) {
         Done(_, configuration) => println!("yes: {:?}", configuration),
         Error(e) => {
-          println!("parse error: {:?}", e);
+          println!("Parse error: {:?}", e);
           assert!(false);
         },
         Incomplete(e) => {
