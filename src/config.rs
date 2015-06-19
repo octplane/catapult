@@ -120,6 +120,7 @@ named!(outputs <&[u8], Vec<(String, Option<HashMap<String,String>>)> >,
   )
 );
 
+#[derive(Debug)]
 pub struct Configuration {
   pub inputs: Vec<(String,  Option<HashMap<String,String>>)>,
   pub outputs: Vec<(String,  Option<HashMap<String,String>>)>,
@@ -128,11 +129,13 @@ pub struct Configuration {
 
 named!(configuration  <&[u8], Configuration>,
   chain!(
-    inputs: inputs        ,
+    inputs: inputs          ~
+    blanks                  ~
+    outputs: outputs        ,
     || {
       Configuration{
         inputs: inputs,
-        outputs: Vec::new(),
+        outputs: outputs,
         filters: Vec::new()
       }
     }
@@ -167,6 +170,7 @@ pub fn read_config_file(filename: &str) -> Result<Configuration, String> {
 fn test_config_parser() {
   match read_config_file("files/test_config.conf") {
     Ok(conf) => {
+      println!("{:?}", conf);
       // Some({"path": "some literal string", "pipo": "12"})), (Stdin, Some({"tag": "stdin"}))]
       assert_eq!(conf.inputs.len(), 2);
       assert_eq!(conf.inputs[0].0, "file");
