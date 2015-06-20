@@ -8,7 +8,7 @@ use std::thread;
 use std::sync::mpsc::sync_channel;
 
 
-pub fn stdin_reader(_config: Option<HashMap<String,String>>) -> Result<Receiver<String>, String> {
+pub fn stdin_input(_config: Option<HashMap<String,String>>) -> Result<Receiver<String>, String> {
   let (tx, rx) = sync_channel(10000);
 
   let reader = thread::Builder::new().name("reader".to_string()).spawn(move || {
@@ -17,7 +17,6 @@ pub fn stdin_reader(_config: Option<HashMap<String,String>>) -> Result<Receiver<
       for line in stdin.lock().lines() {
           let l = line.unwrap();
           let ll = l.clone();
-          println!("Sending {}", l);
           match tx.try_send(l) {
               Ok(()) => {},
               Err(e) => {
@@ -30,6 +29,6 @@ pub fn stdin_reader(_config: Option<HashMap<String,String>>) -> Result<Receiver<
 
   match reader {
     Ok(_) => Ok(rx),
-    Err(e) => Err(format!("Unable to spawn stdin reader thread: {}", e))
+    Err(e) => Err(format!("Unable to spawn stdin input thread: {}", e))
   }
 }
