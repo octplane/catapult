@@ -1,8 +1,11 @@
+#[allow(unused_imports)]
+
 use serde::json;
 use serde::json::value;
 use serde::json::Value;
 use chrono::offset::utc::UTC;
 
+#[allow(dead_code)]
 fn int_to_level(level: u64) -> String {
   match level {
     10 => "trace".to_string(),
@@ -15,6 +18,7 @@ fn int_to_level(level: u64) -> String {
   }
 }
 
+#[allow(dead_code)]
 fn transform(input_value: &mut Value) -> Value {
   // {"name":"stakhanov","hostname":"Quark.local","pid":65470,"level":30
   // "msg":"pushing http://fr.wikipedia.org/wiki/Giant_Sand",
@@ -61,6 +65,7 @@ fn transform(input_value: &mut Value) -> Value {
   return value::to_value(input);
 }
 
+#[allow(dead_code)]
 fn time_to_index_name(full_timestamp: &str) -> String {
   // compatible with "2015-05-21T10:11:02.132Z"
   let mut input = full_timestamp.to_string();

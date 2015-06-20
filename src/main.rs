@@ -1,3 +1,6 @@
+#![feature(convert)]
+#![feature(collections)]
+
 #[macro_use]
 extern crate nom;
 
@@ -11,19 +14,20 @@ pub mod inputs;
 pub mod outputs;
 pub mod filters;
 
+use inputs::Processor;
+
+
 #[allow(dead_code)]
 fn main() {
   let configuration = config::read_config_file("catapult.conf");
   match configuration  {
     Ok(conf) => {
       let ref input = conf.inputs[0];
-      let data_input = match input.0.as_ref() {
-        "stdin" => {
-          match inputs::stdin_input(input.1.clone()) {
-            Ok(data_source) => { println!("Started thread for {:?}", input.0); data_source},
-            Err(e) => panic!("Unable to instanciate input stream for {:?}: {}", input.0, e)
-          }
-        },
+      let ref datasource_name = input.0;
+      let ref args = conf.inputs[0].1;
+      let data_input = match datasource_name.as_str() {
+        "stdin" => inputs::stdin::Stdin::new(datasource_name.to_owned()).start(args),
+        "random" => inputs::random::Random::new(datasource_name.to_owned()).start(args),
         unsupported => { panic!("Input {} not implemented", unsupported)}
       };
 
