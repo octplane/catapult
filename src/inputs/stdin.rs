@@ -16,6 +16,9 @@ impl Stdin {
 }
 
 impl Processor for Stdin {
+  fn human_name(&self) -> &str {
+    self.common.human_name()
+  }
 
   fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String> {
     self.common.invoke(config, Stdin::handle_func)

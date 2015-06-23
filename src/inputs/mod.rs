@@ -10,12 +10,29 @@ struct Common {
   configuration_directive: String,
 }
 
-impl Common {
-  pub fn human_name(&self) -> &str {
+impl Processor for Common {
+  fn human_name(&self) -> &str {
     self.configuration_directive.as_str()
   }
+}
 
-  pub fn requires_fields(&self, optional_config: &Option<HashMap<String,String>>, required_fields: Vec<&str>) {
+pub trait Processor {
+  fn human_name(&self) -> &str;
+  fn mandatory_fields(&self) -> Vec<&str> {
+    vec![]
+  }
+
+  #[allow(unused_variables)]
+  fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String> {
+    panic!("Not implemented");
+  }
+
+  #[allow(unused_variables)]
+  fn handle_func(tx: SyncSender<String>, config: Option<HashMap<String,String>>) {
+    panic!("Not implemented");
+  }
+
+  fn requires_fields(&self, optional_config: &Option<HashMap<String,String>>, required_fields: Vec<&str>) {
     let mut missing_fields = Vec::new();
     match optional_config {
       &Some(ref config) => {
@@ -33,7 +50,7 @@ impl Common {
     }
   }
 
-  pub fn invoke(&self, config: &Option<HashMap<String,String>>,
+  fn invoke(&self, config: &Option<HashMap<String,String>>,
     handle_func: fn(tx: SyncSender<String>, config: Option<HashMap<String,String>>)) -> Receiver<String>
    {
     let (tx, rx) = sync_channel(10000);
@@ -51,12 +68,5 @@ impl Common {
       Err(e) => panic!("Unable to spawn {} input thread: {}", self.human_name(), e)
     }
   }
+
 }
-
-pub trait Processor {
-  fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String>;
-  fn handle_func(tx: SyncSender<String>, config: Option<HashMap<String,String>>);
-}
-
-
-
