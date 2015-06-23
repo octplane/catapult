@@ -4,7 +4,6 @@ use std::thread::sleep_ms;
 
 use inputs::{Common, Processor};
 
-
 pub struct Random {
   common: Common
 }
@@ -45,17 +44,5 @@ impl Processor for Random {
         }
       }
     }
-
-    // for line in stdin.lock().lines() {
-    //   let l = line.unwrap();
-    //   let ll = l.clone();
-    //   match tx.try_send(l) {
-    //     Ok(()) => {},
-    //     Err(e) => {
-    //       println!("Unable to send line to processor: {}", e);
-    //       println!("{}", ll)
-    //     }
-    //   }
-    // }
   }
 }
