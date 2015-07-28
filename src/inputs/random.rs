@@ -6,15 +6,13 @@ use inputs::{Common, Processor};
 
 #[derive(Clone)]
 enum Kind {
-  String,
-  Date,
-  Integer
+  String
 }
 
 #[derive(Clone)]
 struct GeneratedType{
   name: String,
-  kind: Kind
+  kind: Kind,
 }
 
 impl GeneratedType {
@@ -59,7 +57,7 @@ impl Processor for Random {
     let rate = conf.get("rate").unwrap().clone();
 
     let sleep_duration: u32 = (1000.0f32 / rate.parse::<f32>().unwrap()) as u32;
-    println!("will sleep for {}", sleep_duration);
+    println!("Random input will sleep for {}", sleep_duration);
 
     let fields: Vec<GeneratedType> = conf.get("fieldlist").unwrap().split(",").map(move |f| typeize(f)).collect();
 

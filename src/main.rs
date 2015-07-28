@@ -39,6 +39,13 @@ fn main() {
             Err(e) => panic!("Unable to instanciate output stream for {:?}: {}", output.0, e)
           }
         },
+        "network" => {
+          match outputs::network_output(data_input, output.1.clone()) {
+            Ok(data_source) => { println!("Started thread for {:?}", output.0); data_source},
+            Err(e) => panic!("Unable to instanciate output stream for {:?}: {}", output.0, e)
+          }
+
+        }
         unsupported => { panic!("Output {} not implemented", unsupported)}
       };
 
