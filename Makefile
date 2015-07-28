@@ -1,5 +1,5 @@
 target/release/catapult:
-	docker build --force-rm==true -t octplane/catapult:latest .
+	docker build -t octplane/catapult:latest .
 clean:
 	rm -rf target
 doc: target/doc/catapult/index.html
