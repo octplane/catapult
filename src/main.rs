@@ -36,7 +36,7 @@ fn main() {
       let ref oargs = output.1;
       let data_output = match output.0.as_ref() {
         "stdout" => outputs::stdout::Stdout::new(dataoutput_name.to_owned()).start(data_input, oargs),
-        // "network" => outputs::network::Network::new(data_input).start(output.1.clone()),
+        "network" => outputs::network::Network::new(dataoutput_name.to_owned()).start(data_input, oargs),
         unsupported => { panic!("Output {} not implemented", unsupported)}
       };
 
