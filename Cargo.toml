@@ -5,8 +5,11 @@ authors = ["Pierre Baillet <pierre@baillet.name>"]
 
 description = "Catapult sends you logs elsewhere"
 keyworkds = ["network", "logs", "shipping", "logstash"]
-readme = "README"
+readme = "README.md"
 license= "MIT"
+documentation = "http://people.zoy.org/~oct/public/doc/catapult/inputs/index.html"
+repository = "https://github.com/octplane/catapult"
+homepage = "https://github.com/octplane/catapult"
 
 [dependencies]
 
