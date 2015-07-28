@@ -6,6 +6,26 @@ use std::thread::JoinHandle;
 
 use std::net::UdpSocket;
 
+/// # Network output
+///
+/// - sends output on the network using UDP
+///
+/// ### catapult.conf
+///
+/// ```
+/// output {
+/// 	network {
+/// 		destination = "127.0.0.1"
+/// 		port = 12121
+/// 	}
+/// }
+/// ```
+/// ### Parameters
+///
+/// - **destination**: IP/name Destination
+/// - **port**: Destination Port
+
+
 pub struct Network {
   name: String
 }

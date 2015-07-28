@@ -3,6 +3,23 @@ use std::sync::mpsc::{Receiver, SyncSender};
 use std::net::UdpSocket;
 
 use processor::{InputProcessor, ConfigurableFilter};
+/// # Network input
+///
+/// - listens on an UDP port for data, forward upstream
+///
+/// ### catapult.conf
+///
+/// ```
+/// input {
+///   network {
+///     listenPort = 6667
+///   }
+/// }
+/// ```
+/// ### Parameters
+///
+/// - **listenPort**: UDP port to listen to
+
 
 pub struct Network {
   name: String

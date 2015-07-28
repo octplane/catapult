@@ -1,9 +1,10 @@
 [package]
 name = "catapult"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Pierre Baillet <pierre@baillet.name>"]
 
-description = "Reads json in stdin, sends everything to ES, validate slightly in the middle"
+description = "Catapult sends you logs elsewhere"
+keyworkds = ["network", "logs", "shipping", "logstash"]
 readme = "README"
 license= "MIT"
 

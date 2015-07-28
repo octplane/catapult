@@ -4,6 +4,22 @@ use std::collections::HashMap;
 use std::sync::mpsc::Receiver;
 use std::thread::JoinHandle;
 
+/// # Stdout output
+///
+/// - sends output to stdout
+///
+/// ### catapult.conf
+///
+/// ```
+/// output {
+///   stdout
+/// }
+/// ```
+/// ### Parameters
+///
+/// - none
+
+
 pub struct Stdout {
   name: String
 }

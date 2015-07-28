@@ -25,6 +25,30 @@ pub struct Random {
   name: String
 }
 
+/// # Random input
+///
+/// - generate fake input according to column definitions
+///
+/// ### catapult.conf
+///
+/// ```
+/// input {
+/// 	random {
+/// 		fieldlist = "id:id,content:str"
+/// 		rate = 3
+/// 	}
+/// }
+/// ```
+/// ### Parameters
+///
+/// - **rate**: Number of messages per second
+/// - **fieldList**: comma separated list of field name : type
+///
+/// ### Supported type
+///
+/// - String for now. All other types use string.
+
+
 impl Random {
     pub fn new(name: String) -> Random {
     Random{ name: name }

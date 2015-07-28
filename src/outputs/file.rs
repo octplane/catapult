@@ -13,6 +13,22 @@ use std::fs::OpenOptions;
 
 use time;
 
+/// # File output
+///
+/// - sends output into a rotating file
+///
+/// ### catapult.conf
+///
+/// ```
+/// output {
+/// 	file {
+/// 		directory = "./logs/"
+/// 	}
+/// }
+/// ```
+/// ### Parameters
+///
+/// - **directory**: Base directory into which logs are created. Can be a strftime pattern.
 
 pub struct RotatingFile {
   name: String

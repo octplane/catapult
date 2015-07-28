@@ -5,6 +5,21 @@ use std::sync::mpsc::{Receiver, SyncSender};
 
 use processor::{InputProcessor, ConfigurableFilter};
 
+/// # Stdin input
+///
+/// - reads stdin
+///
+/// ### catapult.conf
+///
+/// ```
+/// input {
+///   stdin
+/// }
+/// ```
+/// ### Parameters
+///
+/// - none
+
 pub struct Stdin {
   name: String
 }

@@ -1,3 +1,8 @@
+//! Catapult is a simple replacement for logstash written in Rust
+//!
+//! It aims at being a simple logshipper that read logs from its inputs, transforms them using its filters
+//! and send them to its outputs.
+
 #![feature(convert)]
 #![feature(vec_push_all)]
 
