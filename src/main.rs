@@ -8,6 +8,7 @@ extern crate serde;
 extern crate chrono;
 extern crate hyper;
 extern crate url;
+extern crate time;
 
 extern crate docopt;
 
@@ -58,6 +59,7 @@ fn main() {
       let data_output = match output.0.as_ref() {
         "stdout" => outputs::stdout::Stdout::new(dataoutput_name.to_owned()).start(data_input, oargs),
         "network" => outputs::network::Network::new(dataoutput_name.to_owned()).start(data_input, oargs),
+        "file" => outputs::file::RotatingFile::new(dataoutput_name.to_owned()).start(data_input, oargs),
         unsupported => { panic!("Output {} not implemented", unsupported)}
       };
 

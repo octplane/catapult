@@ -69,7 +69,7 @@ impl InputProcessor for Random {
       for f in fields.clone() {
         l.push(f.generate());
       }
-      let line = l.connect("\t");
+      let line = l.join("\t");
       match tx.try_send(line.clone()) {
         Ok(()) => {},
         Err(e) => {
