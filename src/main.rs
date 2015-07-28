@@ -15,8 +15,7 @@ pub mod outputs;
 pub mod filters;
 pub mod processor;
 
-use processor::Processor;
-
+use processor::ConfigurableFilter;
 
 #[allow(dead_code)]
 fn main() {

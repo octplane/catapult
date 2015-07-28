@@ -3,17 +3,7 @@ use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread;
 use std::sync::mpsc::sync_channel;
 
-pub struct Common {
-  pub configuration_directive: String,
-}
-
-impl Processor for Common {
-  fn human_name(&self) -> &str {
-    self.configuration_directive.as_str()
-  }
-}
-
-pub trait Processor {
+pub trait ConfigurableFilter {
   fn human_name(&self) -> &str;
   fn mandatory_fields(&self) -> Vec<&str> {
     vec![]
@@ -21,11 +11,6 @@ pub trait Processor {
 
   #[allow(unused_variables)]
   fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String> {
-    panic!("Not implemented");
-  }
-
-  #[allow(unused_variables)]
-  fn handle_func(tx: SyncSender<String>, config: Option<HashMap<String,String>>) {
     panic!("Not implemented");
   }
 
@@ -46,6 +31,13 @@ pub trait Processor {
       panic!("Missing fiends for {}: {:?}", self.human_name(), missing_fields);
     }
   }
+}
+
+pub trait InputProcessor: ConfigurableFilter {
+  #[allow(unused_variables)]
+  fn handle_func(tx: SyncSender<String>, config: Option<HashMap<String,String>>) {
+    panic!("Not implemented");
+  }
 
   fn invoke(&self, config: &Option<HashMap<String,String>>,
     handle_func: fn(tx: SyncSender<String>, config: Option<HashMap<String,String>>)) -> Receiver<String>
@@ -65,5 +57,4 @@ pub trait Processor {
       Err(e) => panic!("Unable to spawn {} input thread: {}", self.human_name(), e)
     }
   }
-
 }

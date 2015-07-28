@@ -3,30 +3,31 @@ use std::io::prelude::*;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, SyncSender};
 
-use processor::{Common,Processor};
+use processor::{InputProcessor, ConfigurableFilter};
 
 pub struct Stdin {
-  common: Common
+  name: String
 }
 
 impl Stdin {
-    pub fn new(configuration_directive: String) -> Stdin {
-    Stdin{ common: Common{configuration_directive: configuration_directive} }
+  pub fn new(name: String) -> Stdin {
+    Stdin{ name: name }
   }
 }
 
-impl Processor for Stdin {
+impl ConfigurableFilter for Stdin {
   fn human_name(&self) -> &str {
-    self.common.human_name()
+    self.name.as_str()
   }
 
   fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String> {
-    self.common.invoke(config, Stdin::handle_func)
+    self.invoke(config, Stdin::handle_func)
   }
+}
 
+impl InputProcessor for Stdin {
   fn handle_func(tx: SyncSender<String>, _config: Option<HashMap<String,String>>) {
     let stdin = io::stdin();
-
 
     for line in stdin.lock().lines() {
       let l = line.unwrap();

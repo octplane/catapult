@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread::sleep_ms;
 
-use processor::{Common, Processor};
+use processor::{InputProcessor, ConfigurableFilter};
 
 #[derive(Clone)]
 enum Kind {
@@ -22,12 +22,12 @@ impl GeneratedType {
 }
 
 pub struct Random {
-  common: Common
+  name: String
 }
 
 impl Random {
-    pub fn new(configuration_directive: String) -> Random {
-    Random{ common: Common{configuration_directive: configuration_directive} }
+    pub fn new(name: String) -> Random {
+    Random{ name: name }
   }
 }
 
@@ -39,19 +39,21 @@ fn typeize(f: &str) -> GeneratedType {
   }
 }
 
-impl Processor for Random {
+impl ConfigurableFilter for Random {
   fn human_name(&self) -> &str {
-    self.common.human_name()
+    self.name.as_str()
   }
   fn mandatory_fields(&self) -> Vec<&str> {
     vec!["fieldlist", "rate"]
   }
 
   fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String> {
-    self.common.requires_fields(config, self.mandatory_fields());
-    self.common.invoke(config, Random::handle_func)
+    self.requires_fields(config, self.mandatory_fields());
+    self.invoke(config, Random::handle_func)
   }
+}
 
+impl InputProcessor for Random {
   fn handle_func(tx: SyncSender<String>, config: Option<HashMap<String,String>>) {
     let conf = config.unwrap();
     let rate = conf.get("rate").unwrap().clone();
@@ -60,7 +62,6 @@ impl Processor for Random {
     println!("Random input will sleep for {}", sleep_duration);
 
     let fields: Vec<GeneratedType> = conf.get("fieldlist").unwrap().split(",").map(move |f| typeize(f)).collect();
-
 
     loop {
       sleep_ms(sleep_duration);
