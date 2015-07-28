@@ -1,5 +1,5 @@
 #![feature(convert)]
-#![feature(collections)]
+#![feature(vec_push_all)]
 
 #[macro_use]
 extern crate nom;
