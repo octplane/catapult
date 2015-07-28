@@ -21,10 +21,14 @@ impl ConfigurableFilter for Network {
     self.name.as_str()
   }
 
+  fn mandatory_fields(&self) -> Vec<&str> {
+    vec!["destination", "port"]
+  }
 }
 
 impl OutputProcessor for Network {
   fn start(&self, rx:Receiver<String>, config: &Option<HashMap<String,String>>)  -> Result<JoinHandle<()>, String> {
+    self.requires_fields(config, self.mandatory_fields());
     self.invoke(rx, config, Network::handle_func)
   }
   fn handle_func(rx: Receiver<String>, oconfig: Option<HashMap<String,String>>) {

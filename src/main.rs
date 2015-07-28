@@ -9,17 +9,37 @@ extern crate chrono;
 extern crate hyper;
 extern crate url;
 
+extern crate docopt;
+
 pub mod config;
 pub mod inputs;
 pub mod outputs;
 pub mod filters;
 pub mod processor;
 
+use docopt::Docopt;
 use processor::{InputProcessor, OutputProcessor};
+
+// Write the Docopt usage string. dfrites ?
+static USAGE: &'static str = "
+Usage: catapult [-c CONFIGFILE]
+       catapult (--help | -h)
+
+Options:
+    -h, --help     Show this screen.
+    -c CONFIGFILE  Configuration file [default: catapult.conf]
+";
 
 #[allow(dead_code)]
 fn main() {
-  let configuration = config::read_config_file("catapult.conf");
+  // Parse argv and exit the program with an error message if it fails.
+  let args = Docopt::new(USAGE)
+    .and_then(|d| d.argv(std::env::args().into_iter()).parse())
+    .unwrap_or_else(|e| e.exit());
+
+  let config_file = args.get_str("-c");
+
+  let configuration = config::read_config_file(config_file);
   match configuration  {
     Ok(conf) => {
       let ref input = conf.inputs[0];
@@ -28,6 +48,7 @@ fn main() {
       let data_input = match datasource_name.as_str() {
         "stdin" => inputs::stdin::Stdin::new(datasource_name.to_owned()).start(args),
         "random" => inputs::random::Random::new(datasource_name.to_owned()).start(args),
+        "network" => inputs::network::Network::new(datasource_name.to_owned()).start(args),
         unsupported => { panic!("Input {} not implemented", unsupported)}
       };
 

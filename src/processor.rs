@@ -25,7 +25,7 @@ pub trait ConfigurableFilter {
     }
 
     if missing_fields.len() > 0 {
-      panic!("Missing fiends for {}: {:?}", self.human_name(), missing_fields);
+      panic!("Missing fields for \"{}\": {:?}", self.human_name(), missing_fields);
     }
   }
 }

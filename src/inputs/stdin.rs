@@ -19,7 +19,6 @@ impl ConfigurableFilter for Stdin {
   fn human_name(&self) -> &str {
     self.name.as_str()
   }
-
 }
 
 impl InputProcessor for Stdin {
