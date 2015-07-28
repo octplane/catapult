@@ -20,12 +20,12 @@ impl ConfigurableFilter for Stdin {
     self.name.as_str()
   }
 
-  fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String> {
-    self.invoke(config, Stdin::handle_func)
-  }
 }
 
 impl InputProcessor for Stdin {
+  fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String> {
+    self.invoke(config, Stdin::handle_func)
+  }
   fn handle_func(tx: SyncSender<String>, _config: Option<HashMap<String,String>>) {
     let stdin = io::stdin();
 

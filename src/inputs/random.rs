@@ -47,13 +47,13 @@ impl ConfigurableFilter for Random {
     vec!["fieldlist", "rate"]
   }
 
+}
+
+impl InputProcessor for Random {
   fn start(&self, config: &Option<HashMap<String,String>>) -> Receiver<String> {
     self.requires_fields(config, self.mandatory_fields());
     self.invoke(config, Random::handle_func)
   }
-}
-
-impl InputProcessor for Random {
   fn handle_func(tx: SyncSender<String>, config: Option<HashMap<String,String>>) {
     let conf = config.unwrap();
     let rate = conf.get("rate").unwrap().clone();

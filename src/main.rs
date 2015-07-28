@@ -15,7 +15,7 @@ pub mod outputs;
 pub mod filters;
 pub mod processor;
 
-use processor::ConfigurableFilter;
+use processor::{InputProcessor, OutputProcessor};
 
 #[allow(dead_code)]
 fn main() {
@@ -32,24 +32,15 @@ fn main() {
       };
 
       let ref output = conf.outputs[0];
+      let ref dataoutput_name = output.0;
+      let ref oargs = output.1;
       let data_output = match output.0.as_ref() {
-        "stdout" => {
-          match outputs::stdout_output(data_input, output.1.clone()) {
-            Ok(data_source) => { println!("Started thread for {:?}", output.0); data_source},
-            Err(e) => panic!("Unable to instanciate output stream for {:?}: {}", output.0, e)
-          }
-        },
-        "network" => {
-          match outputs::network_output(data_input, output.1.clone()) {
-            Ok(data_source) => { println!("Started thread for {:?}", output.0); data_source},
-            Err(e) => panic!("Unable to instanciate output stream for {:?}: {}", output.0, e)
-          }
-
-        }
+        "stdout" => outputs::stdout::Stdout::new(dataoutput_name.to_owned()).start(data_input, oargs),
+        // "network" => outputs::network::Network::new(data_input).start(output.1.clone()),
         unsupported => { panic!("Output {} not implemented", unsupported)}
       };
 
-      let _p = data_output.join();
+      let _p = data_output.unwrap().join();
 
     },
     Err(e) => panic!("{:?}", e)
