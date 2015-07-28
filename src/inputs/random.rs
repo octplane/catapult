@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread::sleep_ms;
 
-use inputs::{Common, Processor};
+use processor::{Common, Processor};
 
 #[derive(Clone)]
 enum Kind {

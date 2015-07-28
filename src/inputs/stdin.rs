@@ -3,7 +3,7 @@ use std::io::prelude::*;
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, SyncSender};
 
-use inputs::{Common, Processor};
+use processor::{Common,Processor};
 
 pub struct Stdin {
   common: Common

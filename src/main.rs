@@ -13,8 +13,9 @@ pub mod config;
 pub mod inputs;
 pub mod outputs;
 pub mod filters;
+pub mod processor;
 
-use inputs::Processor;
+use processor::Processor;
 
 
 #[allow(dead_code)]
