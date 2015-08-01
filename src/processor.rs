@@ -4,7 +4,6 @@ use std::thread;
 use std::sync::mpsc::sync_channel;
 use std::thread::JoinHandle;
 
-
 pub trait ConfigurableFilter {
   fn human_name(&self) -> &str;
   fn mandatory_fields(&self) -> Vec<&str> {
@@ -21,7 +20,7 @@ pub trait ConfigurableFilter {
           }
         }
       },
-      &None => {missing_fields.push_all(&required_fields)}
+      &None => {missing_fields.extend(&required_fields)}
     }
 
     if missing_fields.len() > 0 {

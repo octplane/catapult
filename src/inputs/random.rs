@@ -33,10 +33,10 @@ pub struct Random {
 ///
 /// ```
 /// input {
-/// 	random {
-/// 		fieldlist = "id:id,content:str"
-/// 		rate = 3
-/// 	}
+///     random {
+///         fieldlist = "id:id,content:str"
+///         rate = 3
+///     }
 /// }
 /// ```
 /// ### Parameters
@@ -65,7 +65,7 @@ fn typeize(f: &str) -> GeneratedType {
 
 impl ConfigurableFilter for Random {
   fn human_name(&self) -> &str {
-    self.name.as_str()
+    self.name.as_ref()
   }
   fn mandatory_fields(&self) -> Vec<&str> {
     vec!["fieldlist", "rate"]
@@ -93,7 +93,7 @@ impl InputProcessor for Random {
       for f in fields.clone() {
         l.push(f.generate());
       }
-      let line = l.join("\t");
+      let line = l.connect("\t");
       match tx.try_send(line.clone()) {
         Ok(()) => {},
         Err(e) => {
