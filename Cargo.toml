@@ -4,7 +4,7 @@ version = "0.1.1"
 authors = ["Pierre Baillet <pierre@baillet.name>"]
 
 description = "Catapult sends you logs elsewhere"
-keyworkds = ["network", "logs", "shipping", "logstash"]
+keywords = ["network", "logs", "shipping", "logstash"]
 readme = "README.md"
 license= "MIT"
 documentation = "http://people.zoy.org/~oct/public/doc/catapult/inputs/index.html"

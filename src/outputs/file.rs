@@ -42,7 +42,7 @@ impl RotatingFile {
 
 impl ConfigurableFilter for RotatingFile {
   fn human_name(&self) -> &str {
-    self.name.as_str()
+    self.name.as_ref()
   }
 
   fn mandatory_fields(&self) -> Vec<&str> {
@@ -72,8 +72,8 @@ impl OutputProcessor for RotatingFile {
       match rx.recv() {
         Ok(mut l) => {
           let now = time::now();
-          let basefile = time::strftime(basefile_format.as_str(), &now).ok().unwrap();
-          let new_log_path = PathBuf::from(basefile.as_str());
+          let basefile = time::strftime(basefile_format.as_ref(), &now).ok().unwrap();
+          let new_log_path = PathBuf::from(basefile);
           let new_parent_dir = new_log_path.parent().unwrap().to_path_buf();
           if new_parent_dir != parent_dir {
             match fs::metadata(new_parent_dir.as_path()) {

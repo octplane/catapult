@@ -32,7 +32,7 @@ impl Stdout {
 
 impl ConfigurableFilter for Stdout {
   fn human_name(&self) -> &str {
-    self.name.as_str()
+    self.name.as_ref()
   }
 
 }

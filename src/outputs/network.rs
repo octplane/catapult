@@ -38,7 +38,7 @@ impl Network {
 
 impl ConfigurableFilter for Network {
   fn human_name(&self) -> &str {
-    self.name.as_str()
+    self.name.as_ref()
   }
 
   fn mandatory_fields(&self) -> Vec<&str> {
@@ -63,7 +63,7 @@ impl OutputProcessor for Network {
     loop {
       match rx.recv() {
         Ok(l) => {
-          udp.send_to(l.as_bytes(), dest.as_str()).unwrap();
+          udp.send_to(l.as_bytes(), &*dest).unwrap();
         },
         Err(e) => { panic!(e) }
       }

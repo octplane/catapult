@@ -33,7 +33,7 @@ impl Network {
 
 impl ConfigurableFilter for Network {
   fn human_name(&self) -> &str {
-    self.name.as_str()
+    self.name.as_ref()
   }
 
   fn mandatory_fields(&self) -> Vec<&str> {
@@ -51,7 +51,7 @@ impl InputProcessor for Network {
     let config = oconfig.expect("Need a configuration");
     let listen_port = config.get("listenPort").expect("Need a listen port").parse::<u32>().unwrap();
 
-    let udp = UdpSocket::bind(format!("0.0.0.0:{}", listen_port).as_str()).unwrap();
+    let udp = UdpSocket::bind(&*format!("0.0.0.0:{}", listen_port)).unwrap();
 
     loop {
       let mut buf = [0; 1024];
