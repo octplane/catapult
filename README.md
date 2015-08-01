@@ -26,3 +26,7 @@ make
 ```
 
 If you want to build the linux binary inside a container
+
+# Contributors
+
+- Łukasz Niemier / hauleth : Backport to support beta rust
