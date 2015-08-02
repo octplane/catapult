@@ -1,6 +1,9 @@
+extern crate rand as rnd;
+
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, SyncSender};
 use std::thread::sleep_ms;
+use self::rnd::{thread_rng, Rng};
 
 use processor::{InputProcessor, ConfigurableFilter};
 
@@ -12,7 +15,8 @@ trait Randomizable {
 
 impl Randomizable for StringField {
   fn generate(&self) -> String {
-    "foo".to_string()
+    let s:String = thread_rng().gen_ascii_chars().take(10).collect();
+    s
   }
 }
 
