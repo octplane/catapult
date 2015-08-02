@@ -8,6 +8,7 @@ use self::rnd::{thread_rng, Rng};
 use processor::{InputProcessor, ConfigurableFilter};
 
 struct StringField;
+struct UInt32Field;
 
 trait Randomizable {
   fn generate(&self) -> String;
@@ -17,6 +18,12 @@ impl Randomizable for StringField {
   fn generate(&self) -> String {
     let s:String = thread_rng().gen_ascii_chars().take(10).collect();
     s
+  }
+}
+
+impl Randomizable for UInt32Field {
+  fn generate(&self) -> String {
+    format!("{}", thread_rng().gen::<u32>())
   }
 }
 
@@ -59,7 +66,8 @@ fn typeize(f: &str) -> Box<Randomizable> {
   let definition: Vec<&str> = f.split(":").collect();
   let name = definition[0];
   match definition[1] {
-    _ => Box::new(StringField) as Box<Randomizable>,
+    "u32" => Box::new(UInt32Field) as Box<Randomizable>,
+    _ => Box::new(StringField) as Box<Randomizable>
   }
 }
 
