@@ -4,22 +4,18 @@ use std::thread::sleep_ms;
 
 use processor::{InputProcessor, ConfigurableFilter};
 
-#[derive(Clone)]
-enum Kind {
-  String
+struct StringField;
+
+trait Randomizable {
+  fn generate(&self) -> String;
 }
 
-#[derive(Clone)]
-struct GeneratedType{
-  name: String,
-  kind: Kind,
-}
-
-impl GeneratedType {
-  pub fn generate(&self) -> String {
+impl Randomizable for StringField {
+  fn generate(&self) -> String {
     "foo".to_string()
   }
 }
+
 
 pub struct Random {
   name: String
@@ -55,11 +51,11 @@ impl Random {
   }
 }
 
-fn typeize(f: &str) -> GeneratedType {
+fn typeize(f: &str) -> Box<Randomizable> {
   let definition: Vec<&str> = f.split(":").collect();
   let name = definition[0];
   match definition[1] {
-    _ => GeneratedType{name:name.to_string(), kind: Kind::String }
+    _ => Box::new(StringField) as Box<Randomizable>,
   }
 }
 
@@ -85,12 +81,12 @@ impl InputProcessor for Random {
     let sleep_duration: u32 = (1000.0f32 / rate.parse::<f32>().unwrap()) as u32;
     println!("Random input will sleep for {}", sleep_duration);
 
-    let fields: Vec<GeneratedType> = conf.get("fieldlist").unwrap().split(",").map(move |f| typeize(f)).collect();
+    let fields: Vec<Box<Randomizable>> = conf.get("fieldlist").unwrap().split(",").map(move |f| typeize(f)).collect();
 
     loop {
       sleep_ms(sleep_duration);
       let mut l = Vec::new();
-      for f in fields.clone() {
+      for f in &fields {
         l.push(f.generate());
       }
       let line = l.connect("\t");
