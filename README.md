@@ -16,6 +16,8 @@ Please refer to the [API documentation](http://people.zoy.org/~oct/public/doc/ca
 # Installing
 
 ```
+# on OSX only
+export OPENSSL_INCLUDE_DIR=/usr/local/opt/openssl/include 
 cargo build --release
 ```
 
