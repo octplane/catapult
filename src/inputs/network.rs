@@ -55,7 +55,7 @@ impl InputProcessor for Network {
 
     loop {
       let mut buf = [0; 1024];
-      let (amt, src) = udp.recv_from(&mut buf).unwrap();
+      let _ = udp.recv_from(&mut buf).unwrap();
       let l = String::from_utf8_lossy(&buf).into_owned();
       let ll = l.clone();
       match tx.try_send(l) {

@@ -2,7 +2,8 @@ extern crate rand as rnd;
 
 use std::collections::HashMap;
 use std::sync::mpsc::{Receiver, SyncSender};
-use std::thread::sleep_ms;
+use std::thread::sleep;
+use std::time::Duration;
 use self::rnd::{thread_rng, Rng};
 
 use processor::{InputProcessor, ConfigurableFilter};
@@ -64,7 +65,6 @@ impl Random {
 
 fn typeize(f: &str) -> Box<Randomizable> {
   let definition: Vec<&str> = f.split(":").collect();
-  let name = definition[0];
   match definition[1] {
     "u32" => Box::new(UInt32Field) as Box<Randomizable>,
     _ => Box::new(StringField) as Box<Randomizable>
@@ -96,12 +96,13 @@ impl InputProcessor for Random {
     let fields: Vec<Box<Randomizable>> = conf.get("fieldlist").unwrap().split(",").map(move |f| typeize(f)).collect();
 
     loop {
-      sleep_ms(sleep_duration);
+      let duration = Duration::new(sleep_duration as u64, 0);
+      sleep(duration);
       let mut l = Vec::new();
       for f in &fields {
         l.push(f.generate());
       }
-      let line = l.connect("\t");
+      let line = l.join("\t");
       match tx.try_send(line.clone()) {
         Ok(()) => {},
         Err(e) => {

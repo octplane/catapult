@@ -78,9 +78,9 @@ fn time_to_index_name(full_timestamp: &str) -> String {
 fn it_transform_ok() {
   // let src = r#"{"name":"stakhanov","hostname":"Quark.local","pid":65470,"level":30,"msg":"pushing http://fr.wikipedia.org/wiki/Giant_Sand","time":"2015-05-21T10:11:02.132Z","v":0}"#;
   let src = r#"{"level":30, "msg":"this is a test.", "time": "12"}"#;
-  let mut decode = json::from_str::<Value>(src).unwrap();
+  let mut decode = serde_json::from_str::<Value>(src).unwrap();
   let transformed = transform(&mut decode);
-  let out = json::to_string(&transformed).unwrap();
+  let out = serde_json::to_string(&transformed).unwrap();
   assert_eq!(out, r#"{"@timestamp":"12","level":"info","message":"this is a test."}"#);
 }
 
@@ -88,7 +88,7 @@ fn it_transform_ok() {
 fn it_prepares_index_name() {
   // let src = r#"{"name":"stakhanov","hostname":"Quark.local","pid":65470,"level":30,"msg":"pushing http://fr.wikipedia.org/wiki/Giant_Sand","time":"2015-05-21T10:11:02.132Z","v":0}"#;
   let src = r#"{"time": "2015-05-21T10:11:02.132Z"}"#;
-  let decode = json::from_str::<Value>(src).unwrap();
+  let decode = serde_json::from_str::<Value>(src).unwrap();
   match decode.find("time") {
     Some(time) => assert_eq!("logstash-2015.05.21", time_to_index_name(time.as_string().unwrap())),
     None => assert!(false)
