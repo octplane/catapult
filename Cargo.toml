@@ -1,24 +1,23 @@
 [package]
-name = "catapult"
-version = "0.1.2"
 authors = ["Pierre Baillet <pierre@baillet.name>"]
-
 description = "Catapult sends you logs elsewhere"
-keywords = ["network", "logs", "shipping", "logstash"]
-readme = "README.md"
-license= "MIT"
 documentation = "http://people.zoy.org/~oct/public/doc/catapult/inputs/index.html"
-repository = "https://github.com/octplane/catapult"
 homepage = "https://github.com/octplane/catapult"
+keywords = ["network", "logs", "shipping", "logstash"]
+license = "MIT"
+name = "catapult"
+readme = "README.md"
+repository = "https://github.com/octplane/catapult"
+version = "0.1.2"
 
 [dependencies]
-
-serde = "0.6.1"
-serde_json = "0.6.0"
 chrono = "0.2.16"
-hyper = "0.6.15"
-url = "0.2.37"
-nom = "1.0.0"
 docopt = "0.6.74"
+hyper = "0.6.15"
+log = "0.3.6"
+nom = "1.0.0"
+rand = "0.3.11"
+serde = "0.6.1"
+serde_json = "0.8.3"
 time = "0.1.33"
-rand= "0.3.11"
+url = "0.2.37"
