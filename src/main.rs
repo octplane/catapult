@@ -6,12 +6,15 @@
 #[macro_use]
 extern crate nom;
 
-extern crate serde;
-extern crate serde_json;
+#[macro_use]
+extern crate log;
+
 extern crate chrono;
 extern crate hyper;
-extern crate url;
+extern crate serde;
+extern crate serde_json;
 extern crate time;
+extern crate url;
 
 extern crate docopt;
 
@@ -63,6 +66,7 @@ fn main() {
                 "stdout" => outputs::stdout::Stdout::new(dataoutput_name.to_owned()).start(data_input, oargs),
                 "network" => outputs::network::Network::new(dataoutput_name.to_owned()).start(data_input, oargs),
                 "file" => outputs::file::RotatingFile::new(dataoutput_name.to_owned()).start(data_input, oargs),
+                "elasticsearch" => outputs::elasticsearch::Elasticsearch::new(dataoutput_name.to_owned()).start(data_input, oargs),
                 unsupported => { panic!("Output {} not implemented", unsupported)}
             };
 

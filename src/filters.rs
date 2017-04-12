@@ -19,7 +19,7 @@ fn int_to_level(level: u64) -> String {
 }
 
 #[allow(dead_code)]
-fn transform(input_value: &mut Value) -> Value {
+pub fn transform(input_value: &mut Value) -> Value {
   // {"name":"stakhanov","hostname":"Quark.local","pid":65470,"level":30
   // "msg":"pushing http://fr.wikipedia.org/wiki/Giant_Sand",
   // "time":"2015-05-21T10:11:02.132Z","v":0}
@@ -66,7 +66,7 @@ fn transform(input_value: &mut Value) -> Value {
 }
 
 #[allow(dead_code)]
-fn time_to_index_name(full_timestamp: &str) -> String {
+pub fn time_to_index_name(full_timestamp: &str) -> String {
   // compatible with "2015-05-21T10:11:02.132Z"
   let mut input = full_timestamp.to_string();
   input.truncate(10);
